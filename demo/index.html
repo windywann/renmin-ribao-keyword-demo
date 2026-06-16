@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>标题中的时代｜关键词变迁可视化 Demo</title>
+  <style>
+    :root {
+      --ivory: #f1eee6;
+      --paper: #f7f2e8;
+      --cream: #fbf8ef;
+      --ink: #2a2520;
+      --navy: #3b332d;
+      --cyan: #9f2f36;
+      --gold: #b08a54;
+      --red: #a72f3a;
+      --green: #7f8a63;
+      --violet: #6f5f55;
+      --muted: #7d7266;
+      --line: rgba(74, 61, 50, 0.16);
+      --shadow: 0 22px 56px rgba(74, 61, 50, 0.13);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", sans-serif;
+      background:
+        radial-gradient(circle at 8% 0%, rgba(167, 47, 58, 0.08), transparent 30%),
+        radial-gradient(circle at 92% 10%, rgba(176, 138, 84, 0.13), transparent 34%),
+        linear-gradient(rgba(74, 61, 50, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(74, 61, 50, 0.025) 1px, transparent 1px),
+        var(--ivory);
+      background-size: auto, auto, 32px 32px, 32px 32px, auto;
+    }
+
+    .grain {
+      pointer-events: none;
+      position: fixed;
+      inset: 0;
+      opacity: 0.16;
+      mix-blend-mode: multiply;
+      background-image: repeating-radial-gradient(circle at 0 0, rgba(28, 28, 30, 0.08) 0 1px, transparent 1px 4px);
+      z-index: 0;
+    }
+
+    main {
+      position: relative;
+      z-index: 1;
+      width: min(1480px, calc(100vw - 16px));
+      margin: 0 auto;
+      padding: 12px 0 34px;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      min-height: 0;
+      padding: 0;
+      border-radius: 8px;
+      color: var(--ink);
+      background: var(--paper);
+      box-shadow: 0 18px 48px rgba(74, 61, 50, 0.16);
+    }
+
+    .hero::before {
+      content: none;
+    }
+
+    .hero img {
+      display: block;
+      width: 100%;
+      height: auto;
+      min-height: 210px;
+      object-fit: cover;
+    }
+
+    .hero-overlay {
+      position: absolute;
+      left: 24px;
+      bottom: 22px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border: 1px solid rgba(167, 47, 58, 0.14);
+      border-radius: 6px;
+      color: var(--red);
+      background: rgba(247, 242, 232, 0.72);
+      backdrop-filter: blur(8px);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+
+    .eyebrow {
+      position: relative;
+      z-index: 1;
+      color: var(--gold);
+      font-family: Menlo, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      position: relative;
+      z-index: 1;
+      margin: 18px 0 10px;
+      font-family: "Songti SC", Georgia, serif;
+      font-size: clamp(42px, 7vw, 74px);
+      line-height: 0.96;
+      letter-spacing: -0.06em;
+    }
+
+    .subtitle {
+      position: relative;
+      z-index: 1;
+      max-width: 720px;
+      margin: 0;
+      color: rgba(232, 241, 248, 0.88);
+      font-size: 18px;
+      line-height: 1.72;
+    }
+
+    .hero-card {
+      position: relative;
+      z-index: 1;
+      align-self: stretch;
+      padding: 24px;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 26px;
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(18px);
+    }
+
+    .note {
+      margin-top: 18px;
+      padding: 14px 16px;
+      border-left: 3px solid var(--gold);
+      color: rgba(255,255,255,0.84);
+      background: rgba(255,255,255,0.08);
+      border-radius: 14px;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .hero-stat {
+      padding: 13px;
+      border: 1px solid rgba(255,255,255,0.13);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.07);
+    }
+
+    .hero-stat strong {
+      display: block;
+      color: var(--red);
+      font-family: Menlo, Consolas, monospace;
+      font-size: 20px;
+    }
+
+    .hero-stat span {
+      color: rgba(255,255,255,0.75);
+      font-size: 12px;
+    }
+
+    .panel {
+      border: 1px solid rgba(74, 61, 50, 0.13);
+      border-radius: 10px;
+      background: rgba(251, 248, 239, 0.88);
+      box-shadow: 0 16px 40px rgba(74, 61, 50, 0.08);
+      backdrop-filter: blur(10px);
+    }
+
+    .panel header {
+      padding: 20px 22px 12px;
+      border-bottom: 1px solid rgba(11, 31, 51, 0.08);
+    }
+
+    .panel h2 {
+      margin: 0;
+      color: var(--navy);
+      font-family: "Songti SC", Georgia, serif;
+      font-size: 22px;
+      letter-spacing: -0.03em;
+    }
+
+    .panel .desc {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .time-panel {
+      margin-top: 22px;
+      padding: 24px;
+    }
+
+    .time-grid {
+      display: grid;
+      grid-template-columns: minmax(260px, 0.9fr) 1.6fr;
+      gap: 26px;
+      align-items: center;
+    }
+
+    .stage-title {
+      margin-top: 10px;
+      font-family: "Songti SC", Georgia, serif;
+      font-size: 30px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.05em;
+    }
+
+    .stage-years {
+      margin-top: 7px;
+      color: var(--red);
+      font-family: Menlo, Consolas, monospace;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .slider-wrap {
+      position: relative;
+      padding: 24px 6px 6px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .slider-marks {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      margin-top: 12px;
+      color: var(--muted);
+      font-family: Menlo, Consolas, monospace;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .phase-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .phase-btn, .keyword-btn, .group-btn {
+      cursor: pointer;
+      border: 1px solid rgba(11,31,51,0.10);
+      border-radius: 999px;
+      color: var(--ink);
+      background: rgba(255,255,255,0.68);
+      font: inherit;
+      transition: transform .22s ease, box-shadow .22s ease, background .22s ease, color .22s ease;
+    }
+
+    .phase-btn { padding: 9px 12px; font-size: 12px; }
+    .keyword-btn, .group-btn { padding: 8px 11px; font-size: 12px; font-weight: 700; }
+
+    .phase-btn:hover, .keyword-btn:hover, .group-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(11,31,51,0.1);
+    }
+
+    .phase-btn.active, .keyword-btn.active, .group-btn.active {
+      color: #fff;
+      background: linear-gradient(135deg, var(--red), #7f2630);
+      border-color: rgba(167,47,58,0.42);
+    }
+
+    .analysis-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .wide-grid {
+      display: grid;
+      grid-template-columns: 1.34fr 0.86fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .panel-body { padding: 18px 20px 20px; }
+
+    .cloud {
+      position: relative;
+      min-height: 360px;
+      overflow: hidden;
+      border-radius: 22px;
+      background:
+        radial-gradient(circle at 25% 18%, rgba(167,47,58,0.08), transparent 34%),
+        radial-gradient(circle at 80% 78%, rgba(176,138,84,0.16), transparent 32%),
+        var(--paper);
+      border: 1px solid rgba(196,154,74,0.16);
+    }
+
+    .cloud-word {
+      position: absolute;
+      cursor: pointer;
+      font-family: "Songti SC", Georgia, serif;
+      font-weight: 800;
+      line-height: 1;
+      transform: translate(-50%, -50%) scale(.92);
+      opacity: 0;
+      animation: pop .38s ease forwards;
+      text-shadow: 0 12px 24px rgba(11,31,51,0.10);
+      transition: transform .22s ease, filter .22s ease;
+    }
+
+    .cloud-word:hover {
+      transform: translate(-50%, -50%) scale(1.08) rotate(0deg) !important;
+      filter: drop-shadow(0 12px 20px rgba(167,47,58,.18));
+    }
+
+    @keyframes pop {
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .bars {
+      display: grid;
+      gap: 12px;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 68px 1fr 36px;
+      gap: 10px;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .bar-label {
+      color: var(--navy);
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .bar-track {
+      height: 14px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(11,31,51,0.08);
+    }
+
+    .bar-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--red), #4a3d32);
+      transition: width .48s ease;
+    }
+
+    .bar-value {
+      color: var(--red);
+      font-family: Menlo, Consolas, monospace;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .keyword-row, .group-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 12px;
+    }
+
+    .chart-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+    }
+
+    .selected-title {
+      font-family: "Songti SC", Georgia, serif;
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--navy);
+      letter-spacing: -0.04em;
+    }
+
+    .metric {
+      text-align: right;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .metric strong {
+      display: block;
+      color: var(--red);
+      font-family: Menlo, Consolas, monospace;
+      font-size: 23px;
+    }
+
+    svg { width: 100%; overflow: visible; }
+    #trendChart { height: 350px; }
+    #networkChart { height: 350px; }
+
+    .axis { stroke: rgba(11, 31, 51, 0.35); stroke-width: 1; }
+    .grid { stroke: rgba(11, 31, 51, 0.08); stroke-width: 1; }
+    .history-line { stroke: rgba(196,154,74,0.56); stroke-width: 1; stroke-dasharray: 4 5; }
+    .curve { fill: none; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 8px 12px rgba(167,47,58,.18)); }
+    .area { opacity: .55; }
+    .point { fill: var(--cream); stroke-width: 3; }
+    .label { fill: var(--muted); font-size: 11px; font-family: Menlo, Consolas, monospace; }
+    .network-line { stroke: rgba(167,47,58,0.28); stroke-width: 2; }
+    .network-node { cursor: pointer; filter: drop-shadow(0 10px 14px rgba(11,31,51,.16)); }
+    .network-label { pointer-events: none; font-size: 12px; font-weight: 800; text-anchor: middle; dominant-baseline: middle; }
+
+    .insight {
+      margin-top: 14px;
+      padding: 17px 18px;
+      border-radius: 22px;
+      color: #e8f1f8;
+      background: linear-gradient(135deg, #4a3d32, #2f2722);
+    }
+
+    .insight .tag {
+      color: var(--gold);
+      font-family: Menlo, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .insight p {
+      margin: 10px 0 0;
+      line-height: 1.75;
+      font-size: 14px;
+    }
+
+    .cooccur {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      cursor: pointer;
+      padding: 8px 11px;
+      border-radius: 999px;
+      color: var(--navy);
+      background: rgba(167,47,58,0.10);
+      border: 1px solid rgba(167,47,58,0.18);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 14px;
+    }
+
+    .title-card {
+      position: relative;
+      min-height: 148px;
+      padding: 16px 16px 14px 18px;
+      border: 1px solid rgba(196,154,74,0.26);
+      border-radius: 18px;
+      background: linear-gradient(rgba(167,47,58,0.055), transparent), var(--paper);
+      box-shadow: 0 10px 26px rgba(74,61,50,0.07);
+    }
+
+    .title-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 16px;
+      bottom: 16px;
+      width: 3px;
+      border-radius: 2px;
+      background: var(--red);
+    }
+
+    .title-card time {
+      color: var(--red);
+      font-family: Menlo, Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .title-card p {
+      margin: 8px 0 8px;
+      color: var(--ink);
+      font-size: 15px;
+      line-height: 1.52;
+      font-family: "Songti SC", Georgia, serif;
+      font-weight: 800;
+    }
+
+    .title-card small {
+      color: var(--muted);
+      line-height: 1.45;
+      font-size: 12px;
+    }
+
+    .method-strip {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .method {
+      min-height: 78px;
+      padding: 13px;
+      border: 1px solid rgba(74,61,50,0.10);
+      border-radius: 10px;
+      background: rgba(251, 248, 239, 0.78);
+      transition: transform .22s ease, background .22s ease, box-shadow .22s ease;
+    }
+
+    .method.active {
+      transform: translateY(-3px);
+      color: #fff;
+      background: linear-gradient(135deg, #4a3d32, #2f2722);
+      box-shadow: 0 16px 38px rgba(11,31,51,0.18);
+    }
+
+    .method strong {
+      display: block;
+      color: inherit;
+      font-size: 13px;
+    }
+
+    .method span {
+      display: block;
+      margin-top: 6px;
+      color: inherit;
+      opacity: .72;
+      font-size: 11px;
+      line-height: 1.45;
+    }
+
+    footer {
+      margin-top: 18px;
+      padding: 16px 20px;
+      border-radius: 20px;
+      color: var(--muted);
+      background: rgba(251, 248, 239, 0.76);
+      border: 1px solid rgba(74,61,50,0.10);
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    @media (max-width: 1060px) {
+      .hero, .time-grid, .analysis-grid, .wide-grid { grid-template-columns: 1fr; }
+      .cards { grid-template-columns: 1fr; }
+      .method-strip { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 620px) {
+      main { width: min(100vw - 10px, 1480px); padding-top: 8px; }
+      .hero { border-radius: 6px; }
+      .method-strip { grid-template-columns: 1fr; }
+      #trendChart, #networkChart { height: 300px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+  <main>
+    <section class="hero">
+      <img src="../banner.png" alt="标题中的时代：1946-2026 人民日报标题关键词变迁可视化" />
+      
+    </section>
+
+    <section class="panel time-panel">
+      <div class="time-grid">
+        <div>
+          <div class="eyebrow">Temporal Control</div>
+          <div class="stage-title" id="stageTitle">改革开放初期</div>
+          <div class="stage-years" id="stageYears">1978—1991</div>
+          <div class="phase-pills" id="phasePills"></div>
+        </div>
+        <div class="slider-wrap">
+          <input id="yearSlider" type="range" min="1950" max="2024" step="1" value="1984" />
+          <div class="slider-marks"><span>1950</span><span>1978</span><span>1992</span><span>2001</span><span>2012</span><span>2024</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="analysis-grid">
+      <section class="panel">
+        <header>
+          <h2>阶段关键词词云</h2>
+          <div class="desc">词的大小表示该阶段中的示意权重。点击词云中的词，会联动趋势图、共现网络和标题卡片。</div>
+        </header>
+        <div class="panel-body">
+          <div class="cloud" id="wordCloud"></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header>
+          <h2>阶段 Top 关键词</h2>
+          <div class="desc">用柱状图补充词云，让“被点亮”的关键词更像可比较的统计结果。</div>
+        </header>
+        <div class="panel-body">
+          <div class="bars" id="barChart"></div>
+          <div class="keyword-row" id="keywordButtons"></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="wide-grid">
+      <section class="panel">
+        <header>
+          <h2>多关键词趋势折线图</h2>
+          <div class="desc">选择一个预设词组，比较不同词汇在历史节点前后的变化。</div>
+        </header>
+        <div class="panel-body">
+          <div class="chart-top">
+            <div>
+              <div class="eyebrow" style="color: var(--gold)">Trend View</div>
+              <div class="selected-title" id="selectedTitle">改革</div>
+            </div>
+            <div class="metric">当前阶段权重<strong id="peakValue">88</strong><span>示意值</span></div>
+          </div>
+          <div class="group-row" id="groupButtons"></div>
+          <svg id="trendChart" viewBox="0 0 760 350" role="img" aria-label="多关键词趋势折线图"></svg>
+          <div class="insight">
+            <div class="tag">Interpretive Note</div>
+            <p id="insightText"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <header>
+          <h2>关键词共现网络</h2>
+          <div class="desc">中心词与阶段共现词之间形成关系网络；点击节点可切换中心词。</div>
+        </header>
+        <div class="panel-body">
+          <svg id="networkChart" viewBox="0 0 420 390" role="img" aria-label="关键词共现网络"></svg>
+          <div class="cooccur" id="cooccur"></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel" style="margin-top:18px">
+      <header>
+        <h2>标题档案：回到具体文本</h2>
+        <div class="desc">趋势图和网络图只是问题线索，标题卡片用于提醒研究者回到文本现场。</div>
+      </header>
+      <div class="panel-body">
+        <div class="cards" id="cards"></div>
+      </div>
+    </section>
+
+    <section class="method-strip" id="methodStrip">
+      <div class="method" data-step="data"><strong>数据获取</strong><span>日期 + 标题是最小字段。</span></div>
+      <div class="method" data-step="stage"><strong>历史分期</strong><span>时间条把标题放回阶段。</span></div>
+      <div class="method" data-step="keyword"><strong>关键词提取</strong><span>词云与柱状图展示阶段特征词。</span></div>
+      <div class="method" data-step="trend"><strong>时间序列</strong><span>折线图观察上升、下降与转折。</span></div>
+      <div class="method" data-step="network"><strong>共现分析</strong><span>网络图观察词与词的关系。</span></div>
+      <div class="method" data-step="reading"><strong>文本回读</strong><span>标题卡片回到具体语境。</span></div>
+      <div class="method" data-step="interpret"><strong>人文解释</strong><span>从模式重新回到历史问题。</span></div>
+    </section>
+
+    <footer>
+      注：本 Demo 使用模拟趋势数据与示例标题，用于展示数字人文研究方法链路；所有趋势、权重与标题均为课堂展示示意，正式研究需以人民日报图文数据库导出的真实标题为准。
+    </footer>
+  </main>
+
+  <script>
+    const years = [1950, 1978, 1992, 2001, 2012, 2020, 2024];
+    const colors = ['#a72f3a', '#b08a54', '#7f8a63', '#4a3d32'];
+    const phases = [
+      {
+        id: 'build', name: '社会主义建设时期', range: [1950, 1977], defaultKeyword: '建设',
+        note: '这一阶段的标题话语更集中在建设、生产、工业、农业和群众动员等主题上。',
+        words: [['建设',92],['生产',78],['工业',68],['农业',64],['群众',58],['人民',54],['社会主义',52],['现代化',48],['成就',44],['劳动',40],['计划',38],['集体',35],['技术',32],['青年',30],['农村',28],['工人',26],['学习',24],['先进',22]],
+      },
+      {
+        id: 'reform', name: '改革开放初期', range: [1978, 1991], defaultKeyword: '改革',
+        note: '这一阶段“改革”“开放”“经济”“农村”“体制”等词被点亮，适合观察政策转型词如何进入标题。',
+        words: [['改革',92],['开放',78],['经济',74],['农村',66],['体制',62],['发展',58],['建设',52],['市场',48],['人民',44],['企业',40],['政策',38],['城市',35],['农业',32],['试点',30],['活力',28],['生产',26],['商品',24],['机制',22]],
+      },
+      {
+        id: 'market', name: '市场化与全球化时期', range: [1992, 2001], defaultKeyword: '市场',
+        note: '1992 年后，“市场”“企业”“世界”“现代化”等词与改革话语形成新的搭配。',
+        words: [['市场',88],['企业',76],['改革',70],['经济',68],['发展',64],['世界',58],['现代化',54],['开放',50],['产业',46],['竞争',42],['资本',38],['贸易',36],['城市',34],['制度',32],['全球',30],['加入',28],['增长',26],['结构',24]],
+      },
+      {
+        id: 'newcentury', name: '新世纪发展时期', range: [2002, 2011], defaultKeyword: '发展',
+        note: '新世纪之后，“发展”成为稳定高频词，并与科技、民生、全球、和谐等词共同出现。',
+        words: [['发展',90],['科技',72],['民生',66],['经济',62],['和谐',58],['全球',52],['教育',48],['医疗',44],['创新',42],['奥运',38],['就业',36],['社会',34],['文化',32],['环境',30],['城乡',28],['公共',26],['服务',24],['保障',22]],
+      },
+      {
+        id: 'digital', name: '新时代与数字化时期', range: [2012, 2024], defaultKeyword: '创新',
+        note: '2012 年以后，“创新”“治理”“生态”“数字”“智能”等词更突出，显示公共话语中的数字化与治理转向。',
+        words: [['创新',92],['治理',82],['数字',78],['生态',68],['智能',64],['科技',62],['高质量',58],['发展',54],['人民',50],['安全',46],['平台',42],['算法',40],['数据',38],['绿色',36],['乡村',34],['共同富裕',32],['现代化',30],['人工智能',28]],
+      }
+    ];
+
+    const keywordData = {
+      '建设': { values:[82,68,45,42,38,34,31], co:['生产','工业','农业','群众','现代化','人民','计划','集体','劳动','先进','技术','青年'], note:'“建设”在社会主义建设时期较为突出，之后仍作为国家发展叙事中的基础词汇持续存在。', titles:[['1956-XX-XX','大力推进社会主义建设事业向前发展','说明建设作为阶段性核心词。'],['1964-XX-XX','全国人民积极参加工农业生产建设','标题连接生产、人民和建设。'],['1982-XX-XX','社会主义现代化建设进入新的阶段','现代化语境中建设词继续存在。']] },
+      '改革': { values:[6,34,88,72,58,50,45], co:['开放','经济','体制','农村','市场','治理','企业','政策','城市','试点','机制','活力'], note:'“改革”在 1978 年后明显上升，并在 1990 年代前后保持高位，需结合“开放”“经济”“体制”等共现词理解。', titles:[['1978-XX-XX','推进经济体制改革，激发社会主义建设活力','改革与经济体制相连。'],['1984-XX-XX','农村改革取得新进展，生产积极性不断提高','体现改革在农村语境中的展开。'],['1992-XX-XX','深化改革开放，推动社会主义市场经济发展','改革、开放和市场形成搭配。']] },
+      '开放': { values:[4,28,70,66,52,44,40], co:['改革','经济','世界','市场','合作','贸易','沿海','外资','交流','制度','区域','机遇'], note:'“开放”与“改革”共同构成 1978 年以后的政策转型词，常通过“经济”“世界”“市场”等搭配展开。', titles:[['1979-XX-XX','扩大对外开放，发展经济交流','开放与经济交流相连。'],['1992-XX-XX','改革开放推动中国经济进入新阶段','改革与开放共同构成转型叙事。'],['2001-XX-XX','加入世界贸易组织与中国对外开放新格局','开放进入全球化语境。']] },
+      '市场': { values:[3,12,76,82,62,51,46], co:['企业','经济','改革','世界','发展','竞争','贸易','资本','制度','产业','价格','结构'], note:'“市场”在 1992 年以后显著增强，适合观察市场化和全球化时期的标题话语。', titles:[['1992-XX-XX','加快市场体系建设，促进经济发展','市场与经济发展相连。'],['1998-XX-XX','企业改革与市场竞争推动产业升级','市场、企业和改革共现。'],['2001-XX-XX','面对世界市场，中国企业迎来新机遇','市场进入全球化叙事。']] },
+      '发展': { values:[28,45,62,78,86,80,76], co:['经济','科技','民生','高质量','现代化','社会','教育','医疗','城乡','服务','保障','绿色'], note:'“发展”是跨阶段稳定高频词，在新世纪以后与“科学发展”“高质量发展”“民生”等词形成新的解释框架。', titles:[['2003-XX-XX','坚持科学发展，促进经济社会协调进步','发展与协调、科学形成搭配。'],['2012-XX-XX','推动经济社会发展迈上新台阶','发展保持长期高频。'],['2021-XX-XX','高质量发展成为现代化建设重要主题','发展进入高质量语境。']] },
+      '科技': { values:[18,30,44,60,70,76,74], co:['创新','产业','强国','教育','发展','人才','自主','工程','成果','数字','制造','平台'], note:'“科技”逐渐从现代化建设的工具性词汇，转向与“创新”“产业”“强国”等词共同构成发展叙事。', titles:[['1995-XX-XX','实施科教兴国战略，推动科技进步','科技进入国家战略叙事。'],['2008-XX-XX','科技创新支撑经济社会发展','科技与创新、发展共现。'],['2020-XX-XX','加快建设科技强国，提升自主创新能力','科技与强国、创新相连。']] },
+      '创新': { values:[5,10,20,36,72,90,86], co:['科技','产业','驱动','高质量','人才','数字','平台','企业','成果','机制','发展','强国'], note:'“创新”在 2012 年后明显增强，并与“科技”“产业”“驱动”“高质量”等词形成新的发展话语结构。', titles:[['2012-XX-XX','实施创新驱动发展战略','创新成为发展战略关键词。'],['2018-XX-XX','以科技创新引领产业转型升级','创新与科技、产业共现。'],['2023-XX-XX','创新成为高质量发展的重要动力','创新进入高质量发展叙事。']] },
+      '数字': { values:[1,2,5,10,38,84,92], co:['经济','智能','治理','技术','平台','数据','算法','产业','网络','安全','城市','服务'], note:'“数字”在近年快速上升，常与“经济”“智能”“治理”“技术”等词共现，提示数字化成为新的公共话语主题。', titles:[['2016-XX-XX','数字经济成为经济增长新动能','数字与经济增长相连。'],['2020-XX-XX','数字技术助力社会治理现代化','数字进入治理语境。'],['2024-XX-XX','推动数字经济和实体经济深度融合','数字经济成为发展主题。']] },
+      '智能': { values:[1,2,4,12,32,68,82], co:['人工智能','制造','技术','数字','产业','算法','平台','应用','装备','数据','城市','服务'], note:'“智能”与“人工智能”“制造”“技术”等词一起出现，适合观察近年科技现代性词汇如何进入新闻标题。', titles:[['2017-XX-XX','人工智能发展进入新的阶段','智能词汇进入标题。'],['2020-XX-XX','智能制造推动产业升级','智能与制造、产业相连。'],['2024-XX-XX','智能技术赋能数字中国建设','智能与数字化叙事共现。']] },
+      '治理': { values:[5,8,12,20,48,76,80], co:['改革','数字','社会','现代化','能力','基层','制度','服务','城市','安全','法治','平台'], note:'“治理”在新时代语境中上升，常与社会、数字、现代化等词共同构成治理能力叙事。', titles:[['2013-XX-XX','推进国家治理体系和治理能力现代化','治理成为制度叙事关键词。'],['2020-XX-XX','数字技术提升社会治理效能','治理与数字技术共现。'],['2024-XX-XX','以现代化治理推动高质量发展','治理和发展形成连接。']] },
+      '生态': { values:[2,4,6,14,46,70,74], co:['文明','环境','绿色','发展','治理','保护','低碳','美丽中国','修复','能源','乡村','制度'], note:'“生态”在新时代以后明显增强，并与绿色发展、生态文明等表达形成稳定搭配。', titles:[['2012-XX-XX','生态文明建设进入重要阶段','生态进入建设叙事。'],['2018-XX-XX','绿色发展推动生态环境改善','生态与绿色发展共现。'],['2024-XX-XX','加强生态治理，建设美丽中国','生态与治理相连。']] }
+    };
+
+    const groups = {
+      '政策转型组': ['改革','开放','市场'],
+      '科技现代性组': ['科技','创新','数字'],
+      '国家建设组': ['建设','发展','现代化'],
+      '新时代治理组': ['创新','数字','治理']
+    };
+
+    if (!keywordData['现代化']) keywordData['现代化'] = { values:[30,42,58,62,60,58,56], co:['建设','发展','科技','中国式','强国'], note:'“现代化”跨越多个阶段，常与建设、发展和科技等词共同出现。', titles:[['1982-XX-XX','社会主义现代化建设进入新的阶段','现代化与建设相连。'],['2001-XX-XX','推进现代化建设取得新成就','现代化作为长期目标。'],['2024-XX-XX','以中国式现代化全面推进强国建设','现代化进入新时代叙事。']] };
+
+    let currentPhase = phases[1];
+    let currentKeyword = '改革';
+    let currentGroup = '政策转型组';
+    let activeStep = 'stage';
+
+    const stageTitle = document.getElementById('stageTitle');
+    const stageYears = document.getElementById('stageYears');
+    const slider = document.getElementById('yearSlider');
+    const phasePills = document.getElementById('phasePills');
+    const wordCloud = document.getElementById('wordCloud');
+    const barChart = document.getElementById('barChart');
+    const keywordButtons = document.getElementById('keywordButtons');
+    const groupButtons = document.getElementById('groupButtons');
+    const trendChart = document.getElementById('trendChart');
+    const networkChart = document.getElementById('networkChart');
+    const selectedTitle = document.getElementById('selectedTitle');
+    const peakValue = document.getElementById('peakValue');
+    const insightText = document.getElementById('insightText');
+    const cooccur = document.getElementById('cooccur');
+    const cards = document.getElementById('cards');
+
+    function phaseForYear(year) {
+      return phases.find(p => year >= p.range[0] && year <= p.range[1]) || phases[phases.length - 1];
+    }
+
+    function pathFromPoints(points) {
+      return points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+    }
+
+    function setStep(step) {
+      activeStep = step;
+      document.querySelectorAll('.method').forEach(m => m.classList.toggle('active', m.dataset.step === step));
+    }
+
+    function renderPhaseControls() {
+      phasePills.innerHTML = phases.map(p => `<button class="phase-btn ${p.id === currentPhase.id ? 'active' : ''}" data-phase="${p.id}">${p.name}</button>`).join('');
+      phasePills.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentPhase = phases.find(p => p.id === btn.dataset.phase);
+          slider.value = Math.round((currentPhase.range[0] + currentPhase.range[1]) / 2);
+          currentKeyword = currentPhase.defaultKeyword;
+          activeStep = 'stage';
+          renderAll();
+        });
+      });
+    }
+
+    function renderCloud() {
+      const positions = [[50,48,0],[28,25,-7],[72,28,6],[25,67,5],[72,69,-5],[50,20,4],[14,45,-10],[87,48,8],[48,78,-3],[35,48,2],[63,50,-2],[18,78,7],[82,76,-8],[39,13,-5],[65,15,5],[10,22,9],[90,24,-9],[50,63,0],[30,86,-4],[70,87,4]];
+      const max = Math.max(...currentPhase.words.map(w => w[1]));
+      wordCloud.innerHTML = currentPhase.words.map(([word, value], i) => {
+        const [x,y,rot] = positions[i % positions.length];
+        const size = 13 + (value / max) * 34;
+        const color = word === currentKeyword ? 'var(--red)' : (i % 3 === 0 ? 'var(--navy)' : i % 3 === 1 ? 'var(--gold)' : 'var(--cyan)');
+        return `<span class="cloud-word" data-word="${word}" style="left:${x}%;top:${y}%;font-size:${size}px;color:${color};transform:translate(-50%,-50%) rotate(${rot}deg);animation-delay:${i*35}ms">${word}</span>`;
+      }).join('');
+      wordCloud.querySelectorAll('.cloud-word').forEach(el => {
+        el.addEventListener('click', () => chooseKeyword(el.dataset.word, 'keyword'));
+      });
+    }
+
+    function renderBars() {
+      const max = Math.max(...currentPhase.words.map(w => w[1]));
+      barChart.innerHTML = currentPhase.words.slice(0, 7).map(([word, value]) => `
+        <div class="bar-row">
+          <div class="bar-label" data-word="${word}">${word}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${Math.round(value / max * 100)}%"></div></div>
+          <div class="bar-value">${value}</div>
+        </div>`).join('');
+      barChart.querySelectorAll('.bar-label').forEach(el => el.addEventListener('click', () => chooseKeyword(el.dataset.word, 'keyword')));
+      keywordButtons.innerHTML = currentPhase.words.slice(0, 12).map(([word]) => `<button class="keyword-btn ${word === currentKeyword ? 'active' : ''}" data-word="${word}">${word}</button>`).join('');
+      keywordButtons.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => chooseKeyword(btn.dataset.word, 'keyword')));
+    }
+
+    function chooseKeyword(word, step='trend') {
+      if (!keywordData[word]) return;
+      currentKeyword = word;
+      if (!Object.values(groups).some(arr => arr.includes(word))) currentGroup = '政策转型组';
+      activeStep = step;
+      renderAll(false);
+    }
+
+    function renderGroups() {
+      groupButtons.innerHTML = Object.keys(groups).map(g => `<button class="group-btn ${g === currentGroup ? 'active' : ''}" data-group="${g}">${g}</button>`).join('');
+      groupButtons.querySelectorAll('button').forEach(btn => {
+        btn.addEventListener('click', () => {
+          currentGroup = btn.dataset.group;
+          currentKeyword = groups[currentGroup][0];
+          activeStep = 'trend';
+          renderAll(false);
+        });
+      });
+    }
+
+    function renderTrend() {
+      const W = 760, H = 350;
+      const margin = { left: 54, right: 28, top: 26, bottom: 48 };
+      const innerW = W - margin.left - margin.right;
+      const innerH = H - margin.top - margin.bottom;
+      const maxY = 100;
+      const selected = groups[currentGroup].filter(k => keywordData[k]);
+      selectedTitle.textContent = `${currentKeyword} · ${currentGroup}`;
+      const currentPhaseWeight = currentPhase.words.find(([w]) => w === currentKeyword)?.[1] || Math.max(...(keywordData[currentKeyword]?.values || [0]));
+      peakValue.textContent = currentPhaseWeight;
+      insightText.textContent = `${currentPhase.note} 当前中心词“${currentKeyword}”：${keywordData[currentKeyword]?.note || '该词在当前阶段作为关联词出现，可在正式研究中继续追踪。'}`;
+
+      const gridY = [0,25,50,75,100].map(g => {
+        const y = margin.top + innerH - (g/maxY)*innerH;
+        return `<line class="grid" x1="${margin.left}" y1="${y}" x2="${margin.left+innerW}" y2="${y}"/><text class="label" x="12" y="${y+4}">${g}</text>`;
+      }).join('');
+      const xLabels = years.map((yr,i) => {
+        const x = margin.left + i*innerW/(years.length-1);
+        const special = [1978,1992,2001,2012,2020].includes(yr);
+        return `${special ? `<line class="history-line" x1="${x}" y1="${margin.top}" x2="${x}" y2="${margin.top+innerH}"/>` : ''}<text class="label" x="${x-15}" y="${H-18}">${yr}</text>`;
+      }).join('');
+      const curves = selected.map((key, idx) => {
+        const vals = keywordData[key].values;
+        const points = vals.map((v,i) => ({ x: margin.left+i*innerW/(vals.length-1), y: margin.top+innerH-(v/maxY)*innerH }));
+        const color = key === currentKeyword ? '#b4533c' : colors[idx % colors.length];
+        const dots = points.map((p,i) => `<circle class="point" cx="${p.x}" cy="${p.y}" r="${key === currentKeyword ? 5 : 3.5}" stroke="${color}"><title>${key} ${years[i]}：${vals[i]}</title></circle>`).join('');
+        return `<path class="curve" d="${pathFromPoints(points)}" stroke="${color}" opacity="${key === currentKeyword ? 1 : .55}"/>${dots}<text class="label" x="${W-116}" y="${28+idx*18}" fill="${color}">${key}</text>`;
+      }).join('');
+      trendChart.innerHTML = `
+        ${gridY}${xLabels}
+        <line class="axis" x1="${margin.left}" y1="${margin.top+innerH}" x2="${margin.left+innerW}" y2="${margin.top+innerH}"/>
+        <line class="axis" x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${margin.top+innerH}"/>
+        ${curves}
+        <text class="label" x="${W-210}" y="18">标准化频率：每万条标题（示意）</text>`;
+    }
+
+    function renderNetwork() {
+      const item = keywordData[currentKeyword] || keywordData[currentPhase.defaultKeyword];
+      const center = { x: 210, y: 170 };
+      const words = item.co.slice(0, 10);
+      const radius = 118;
+      const nodes = words.map((word, i) => {
+        const angle = -Math.PI/2 + i * 2*Math.PI/words.length;
+        const ring = i < 6 ? radius : radius * 0.72;
+        return { word, x: center.x + Math.cos(angle)*ring, y: center.y + Math.sin(angle)*ring, r: Math.max(16, 24 - i*0.7) };
+      });
+      const lines = nodes.map(n => `<line class="network-line" x1="${center.x}" y1="${center.y}" x2="${n.x}" y2="${n.y}"/>`).join('');
+      const crossLinks = nodes.slice(0, 6).map((n, i) => {
+        const target = nodes[(i + 2) % nodes.length];
+        return `<line class="network-line" x1="${n.x}" y1="${n.y}" x2="${target.x}" y2="${target.y}" opacity="0.28"/>`;
+      }).join('');
+      const outer = nodes.map((n,i) => `<g class="network-node" data-word="${n.word}"><circle cx="${n.x}" cy="${n.y}" r="${n.r}" fill="${i%3===0 ? '#a72f3a' : i%3===1 ? '#b08a54' : '#7f8a63'}" opacity=".9"/><text class="network-label" x="${n.x}" y="${n.y}" fill="#2a2520" style="font-size:${i>5?10:11}px">${n.word}</text></g>`).join('');
+      networkChart.innerHTML = `${crossLinks}${lines}<circle cx="${center.x}" cy="${center.y}" r="44" fill="#a72f3a"/><text class="network-label" x="${center.x}" y="${center.y}" fill="#fff" style="font-size:16px">${currentKeyword}</text>${outer}`;
+      networkChart.querySelectorAll('.network-node').forEach(node => node.addEventListener('click', () => {
+        const word = node.dataset.word;
+        if (keywordData[word]) chooseKeyword(word, 'network');
+        else setStep('network');
+      }));
+      cooccur.innerHTML = item.co.map(c => `<span class="chip" data-word="${c}">${c}</span>`).join('');
+      cooccur.querySelectorAll('.chip').forEach(chip => chip.addEventListener('click', () => {
+        const word = chip.dataset.word;
+        if (keywordData[word]) chooseKeyword(word, 'network');
+        else setStep('network');
+      }));
+    }
+
+    function renderCards() {
+      const item = keywordData[currentKeyword] || keywordData[currentPhase.defaultKeyword];
+      cards.innerHTML = item.titles.map(([date, title, why]) => `
+        <article class="title-card">
+          <time>${date}</time>
+          <p>${title}</p>
+          <small>${why}</small>
+        </article>`).join('');
+      cards.querySelectorAll('.title-card').forEach(card => card.addEventListener('mouseenter', () => setStep('reading')));
+    }
+
+    function renderAll(phaseChanged=true) {
+      if (phaseChanged && !currentPhase.words.some(([w]) => w === currentKeyword)) currentKeyword = currentPhase.defaultKeyword;
+      stageTitle.textContent = currentPhase.name;
+      stageYears.textContent = `${currentPhase.range[0]}—${currentPhase.range[1]}`;
+      renderPhaseControls();
+      renderCloud();
+      renderBars();
+      renderGroups();
+      renderTrend();
+      renderNetwork();
+      renderCards();
+      setStep(activeStep);
+    }
+
+    slider.addEventListener('input', () => {
+      const next = phaseForYear(Number(slider.value));
+      if (next.id !== currentPhase.id) {
+        currentPhase = next;
+        currentKeyword = currentPhase.defaultKeyword;
+      }
+      activeStep = 'stage';
+      renderAll();
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>
